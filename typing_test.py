@@ -3,30 +3,22 @@ from curses import wrapper
 import time
 import random
 import textwrap  # Used for wrapping text to fit the terminal width
+import os  # Import os module to handle file paths
 
 def start_screen(stdscr):
     """
     Displays the welcome screen and waits for the user to press any key to begin.
-    
-    Parameters:
-    - stdscr: The curses standard screen window object.
     """
     stdscr.clear()
     stdscr.addstr("Welcome to the speed typing test!")
     stdscr.addstr("\nPress any key to begin!")
     stdscr.refresh()
     stdscr.getkey()
-        
+            
 def display_text(stdscr, target, current, wpm=0):
     """
     Displays the target text, user's current input, and the WPM on the screen.
     Highlights correct and incorrect characters.
-    
-    Parameters:
-    - stdscr: The curses standard screen window object.
-    - target: The target text that the user needs to type.
-    - current: A list of characters that the user has typed so far.
-    - wpm: The calculated words per minute speed.
     """
     stdscr.addstr(0, 0, f"WPM: {wpm}\n\n")  # Display WPM at the top
 
@@ -64,11 +56,15 @@ def display_text(stdscr, target, current, wpm=0):
 def load_text():
     """
     Loads text from 'text.txt', splits it into paragraphs, and returns a random paragraph.
-    
     Returns:
     - A randomly selected paragraph from the text file as a string.
     """
-    with open("text.txt", "r") as f:
+    # Get the directory where the script is located
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    # Build the full path to the text.txt file
+    text_file_path = os.path.join(script_dir, 'text.txt')
+    
+    with open(text_file_path, "r", encoding='utf-8') as f:
         content = f.read()
         # Split the content into paragraphs using double newlines as the delimiter
         paragraphs = content.split('\n\n')
@@ -79,9 +75,6 @@ def load_text():
 def wpm_test(stdscr):
     """
     Runs the main typing test loop, capturing user input and calculating WPM.
-    
-    Parameters:
-    - stdscr: The curses standard screen window object.
     """
     target_text = load_text()  # Load a random paragraph
     current_text = []  # List to store user's input characters
@@ -120,9 +113,6 @@ def wpm_test(stdscr):
 def main(stdscr):
     """
     Initializes the curses application and starts the typing test.
-    
-    Parameters:
-    - stdscr: The curses standard screen window object.
     """
     # Initialize color pairs for text coloring
     curses.init_pair(1, curses.COLOR_GREEN, curses.COLOR_BLACK)  # Correct input (Green)
