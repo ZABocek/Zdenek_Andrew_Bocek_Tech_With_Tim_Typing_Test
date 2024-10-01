@@ -20,25 +20,28 @@ def display_text(stdscr, target, current, wpm=0):
     Displays the target text, user's current input, and the WPM on the screen.
     Highlights correct and incorrect characters.
     """
+    stdscr.clear()
     stdscr.addstr(0, 0, f"WPM: {wpm}\n\n")  # Display WPM at the top
 
     # Get the height and width of the terminal window
     h, w = stdscr.getmaxyx()
     
+    # Replace any newlines in the target text with spaces
+    target_text_no_newlines = target.replace('\n', ' ').replace('\r', '')
+
     # Wrap the target text so it fits within the terminal width
-    target_lines = textwrap.wrap(target, w)
-    
+    target_lines = textwrap.wrap(target_text_no_newlines, w)
+
     # Display the target text line by line starting from line index 2
     for idx, line in enumerate(target_lines):
-        stdscr.addstr(idx + 2, 0, line)
-    
-    # Concatenate the target lines back into a single string without line breaks
-    target_text_no_newlines = ''.join(target_lines)
-    
+        stdscr.addstr(idx + 2, 0, line, curses.color_pair(3))
+
     # Convert the current text list to a string
     current_str = ''.join(current)
-    
+
     # Display the user's input with correct coloring
+    cursor_y = 2  # Start displaying input from line 2
+    cursor_x = 0  # Start at the first column
     for i, char in enumerate(current_str):
         if i < len(target_text_no_newlines):
             correct_char = target_text_no_newlines[i]
@@ -49,9 +52,14 @@ def display_text(stdscr, target, current, wpm=0):
         else:
             color = curses.color_pair(2)  # Red for extra characters
 
-        # Calculate the y (row) and x (column) position for each character
-        y, x = divmod(i, w)
-        stdscr.addch(y + 2, x, char, color)  # Offset y by 2 to account for WPM display
+        # Move to the next line if at the end of the screen width
+        if cursor_x >= w:
+            cursor_x = 0
+            cursor_y += 1
+
+        # Display the character with the appropriate color
+        stdscr.addch(cursor_y, cursor_x, char, color)
+        cursor_x += 1  # Move to the next column
 
 def load_text():
     """
@@ -87,12 +95,12 @@ def wpm_test(stdscr):
         # Calculate WPM: total characters typed divided by 5 (average word length), adjusted for time
         wpm = round((len(current_text) / (time_elapsed / 60)) / 5)
 
-        stdscr.clear()
         display_text(stdscr, target_text, current_text, wpm)
         stdscr.refresh()
 
         # Check if the user has finished typing the target text
-        if ''.join(current_text) == target_text.replace('\n', ' '):
+        target_text_no_newlines = target_text.replace('\n', ' ').replace('\r', '')
+        if ''.join(current_text) == target_text_no_newlines:
             stdscr.nodelay(False)  # Stop non-blocking mode
             break  # Exit the typing loop
 
@@ -107,13 +115,16 @@ def wpm_test(stdscr):
         if key in ("KEY_BACKSPACE", "\b", "\x7f"):
             if current_text:
                 current_text.pop()  # Remove the last character from current_text
-        elif len(current_text) < len(target_text):
+        elif len(current_text) < len(target_text_no_newlines):
             current_text.append(key)  # Add the pressed key to current_text
 
 def main(stdscr):
     """
     Initializes the curses application and starts the typing test.
     """
+    # Turn off cursor blinking
+    curses.curs_set(0)
+
     # Initialize color pairs for text coloring
     curses.init_pair(1, curses.COLOR_GREEN, curses.COLOR_BLACK)  # Correct input (Green)
     curses.init_pair(2, curses.COLOR_RED, curses.COLOR_BLACK)    # Incorrect input (Red)
